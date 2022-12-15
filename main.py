@@ -9,7 +9,6 @@ https://github.com/zhm-real/PathPlanning
 '''
 
 class Env:
-    # TODO: generate env based on seed
     def __init__(self, seed):
         np.random.seed(seed)
         self.x_range = (0, 50)
@@ -51,7 +50,10 @@ class Env:
 
         return obs_cir
 
-def plot(env):
+
+
+
+def plot(env, start, goal):
     fig, ax = plt.subplots()
 
     for (ox, oy, w, h) in env.obs_boundary:
@@ -69,7 +71,7 @@ def plot(env):
             patches.Rectangle(
                 (ox, oy), w, h,
                 edgecolor='black',
-                facecolor='gray',
+                facecolor='black',
                 fill=True
             )
         )
@@ -79,22 +81,43 @@ def plot(env):
             patches.Circle(
                 (ox, oy), r,
                 edgecolor='black',
-                facecolor='gray',
+                facecolor='black',
                 fill=True
             )
         )
 
+    ax.add_patch(
+        patches.Circle(
+            (start[0], start[1]), 1,
+            edgecolor='gray',
+            facecolor='gray',
+            fill=True
+        ))
+    ax.add_patch(
+        patches.Circle(
+            (goal[0], goal[1]), 1,
+            edgecolor='gray',
+            facecolor='gray',
+            fill=True
+        ))
     plt.axis("equal")
     plt.show()
 
-def gen_data():
-    _seed = np.random.randint(0,1000)
-    print(_seed)
+def gen_data(start, goal, seed=None, render_me=True):
+    # get random seed
+    if seed is None:
+        _seed = np.random.randint(0,1000)
+    else:
+        _seed = seed
+
+    # create env
     env = Env(_seed)
 
-    plot(env)
+    if render_me:
+        print(_seed)
+        plot(env, start, goal)
 
-
+    return env 
 
 def parse_me():
     parser = argparse.ArgumentParser()
@@ -107,12 +130,14 @@ def parse_me():
 
 def main():
     args = parse_me()
-    
-    # Generate data
-    gen_data()
 
-    # TODO: set start and end points
-    #
+    # Set start and end position
+    start = (3, 3)  # Starting node
+    goal = (49, 27)  # Goal node
+
+    # Generate data
+    env = gen_data(start, goal)
+
 
 
     # Learning 
