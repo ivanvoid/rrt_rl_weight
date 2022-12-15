@@ -97,7 +97,8 @@ class Model(nn.Module):
     def forward(self, x):
         # x = self.feature_extractor(x)
         # value = self.critic(x)
-        
+        value = -1
+
         probs = self.actor(x)
 
-        return probs
+        return probs, value 

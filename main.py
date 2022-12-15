@@ -151,15 +151,27 @@ def main():
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
     t_image = transform(image).unsqueeze(0)
-    # t_image = torch.tensor(image).float()
 
     # TODO: Use RL to generate from image and start and end path weight map
     from RL_model import Model
     model = Model()
-    weight = model(t_image)
+    weight_distribution, value = model(t_image)
+
+    # weight = weight_distribution.sample()
+
+    # log_prob = weight_distribution.log_prob(weight)
+    # entropy  = weight_distribution.entropy().mean()
+
 
     # TODO: RRT-weighted evaluation here as reward function
+    # reward = RRT_weighted(image, weight)
 
+
+    # TODO: UPDATE
+    # advantage = returns - values
+    # actor_loss = -(log_prob * advantage.detach()).mean()
+    # critic_loss = advantage.pow(2).mean()
+    # loss = actor_loss + 0.5 * critic_loss - 0.001 * entropy
 
     # Evaluation
 
