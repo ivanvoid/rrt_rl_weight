@@ -89,19 +89,23 @@ def plot(env, start, goal):
     ax.add_patch(
         patches.Circle(
             (start[0], start[1]), 1,
-            edgecolor='gray',
-            facecolor='gray',
+            edgecolor='blue',
+            facecolor='blue',
             fill=True
         ))
     ax.add_patch(
         patches.Circle(
             (goal[0], goal[1]), 1,
-            edgecolor='gray',
-            facecolor='gray',
+            edgecolor='red',
+            facecolor='red',
             fill=True
         ))
     plt.axis("equal")
+    ax.set_axis_off()
+    fig.savefig('map.png')#, bbox_inches='tight', pad_inches=0)
     plt.show()
+    
+    
 
 def gen_data(start, goal, seed=None, render_me=True):
     # get random seed
