@@ -8,6 +8,7 @@ https://github.com/zhm-real/PathPlanning
 '''
 
 class Env:
+    # TODO: generate env based on seed
     def __init__(self):
         self.x_range = (0, 50)
         self.y_range = (0, 30)
@@ -105,9 +106,20 @@ def main():
     # Generate data
     gen_data()
 
+    # TODO: set start and end points
+    #
+
+
     # Learning 
+    # TODO: Use RL to generate from image and start and end path weight map
+
+    # TODO: RRT-weighted evaluation here as reward function
+
 
     # Evaluation
+
+    # TODO: RRT-weighted evaluation here as reward function, 
+    #       but as evaluation
 
 if __name__ == '__main__':
     main()
