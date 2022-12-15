@@ -1,5 +1,6 @@
 import argparse
 import torch
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 '''
@@ -9,7 +10,8 @@ https://github.com/zhm-real/PathPlanning
 
 class Env:
     # TODO: generate env based on seed
-    def __init__(self):
+    def __init__(self, seed):
+        np.random.seed(seed)
         self.x_range = (0, 50)
         self.y_range = (0, 30)
         self.obs_boundary = self.obs_boundary()
@@ -28,23 +30,24 @@ class Env:
 
     @staticmethod
     def obs_rectangle():
-        obs_rectangle = [
-            [14, 12, 8, 2],
-            [18, 22, 8, 3],
-            [26, 7, 2, 12],
-            [32, 14, 10, 2]
-        ]
+        obs_rectangle = []
+        for _ in range(np.random.randint(2,5)):
+            a = np.random.randint(14,32)
+            b = np.random.randint(7,22)
+            c = np.random.randint(2,10)
+            d = np.random.randint(2,12)
+            obs_rectangle += [[a,b,c,d]]
+
         return obs_rectangle
 
     @staticmethod
     def obs_circle():
-        obs_cir = [
-            [7, 12, 3],
-            [46, 20, 2],
-            [15, 5, 2],
-            [37, 7, 3],
-            [37, 23, 3]
-        ]
+        obs_cir = []
+        for _ in range(np.random.randint(4,6)):
+            a = np.random.randint(7,46)
+            b = np.random.randint(7,23)
+            c = np.random.randint(2,3)
+            obs_cir += [[a,b,c]]
 
         return obs_cir
 
@@ -85,7 +88,9 @@ def plot(env):
     plt.show()
 
 def gen_data():
-    env = Env()
+    _seed = np.random.randint(0,1000)
+    print(_seed)
+    env = Env(_seed)
 
     plot(env)
 
