@@ -53,7 +53,7 @@ class Env:
 
 
 
-def plot(env, start, goal):
+def plot(env, start, goal, render_me):
     fig, ax = plt.subplots()
 
     for (ox, oy, w, h) in env.obs_boundary:
@@ -103,7 +103,8 @@ def plot(env, start, goal):
     plt.axis("equal")
     ax.set_axis_off()
     fig.savefig('map.png')#, bbox_inches='tight', pad_inches=0)
-    plt.show()
+    if render_me:
+        plt.show()
     
     
 
@@ -117,9 +118,8 @@ def gen_data(start, goal, seed=None, render_me=True):
     # create env
     env = Env(_seed)
 
-    if render_me:
-        print(_seed)
-        plot(env, start, goal)
+    print(_seed)
+    plot(env, start, goal, render_me)
 
     return env 
 
@@ -140,12 +140,19 @@ def main():
     goal = (49, 27)  # Goal node
 
     # Generate data
-    env = gen_data(start, goal)
+    env = gen_data(start, goal, 420, False)
 
+    # Learning
+    # read map.py
+    from PIL import Image
+    image = Image.open('map.png') 
+    image = np.array(image) / 255
+    t_image = torch.tensor(image).float()
 
-
-    # Learning 
     # TODO: Use RL to generate from image and start and end path weight map
+    from RL_model import Model
+    model = Model()
+    weight = model(t_image)
 
     # TODO: RRT-weighted evaluation here as reward function
 
