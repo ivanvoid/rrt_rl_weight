@@ -51,8 +51,6 @@ class Env:
         return obs_cir
 
 
-
-
 def plot(env, start, goal, render_me):
     fig, ax = plt.subplots()
 
@@ -106,7 +104,6 @@ def plot(env, start, goal, render_me):
     if render_me:
         plt.show()
     
-    
 
 def gen_data(start, goal, seed=None, render_me=True):
     # get random seed
@@ -122,6 +119,7 @@ def gen_data(start, goal, seed=None, render_me=True):
     plot(env, start, goal, render_me)
 
     return env 
+
 
 def parse_me():
     parser = argparse.ArgumentParser()
@@ -144,10 +142,16 @@ def main():
 
     # Learning
     # read map.py
+    import torchvision.transforms as transforms
     from PIL import Image
-    image = Image.open('map.png') 
-    image = np.array(image) / 255
-    t_image = torch.tensor(image).float()
+    image = Image.open('map.png').convert('RGB')
+
+    transform = transforms.Compose(
+        [transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+
+    t_image = transform(image).unsqueeze(0)
+    # t_image = torch.tensor(image).float()
 
     # TODO: Use RL to generate from image and start and end path weight map
     from RL_model import Model
