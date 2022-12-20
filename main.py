@@ -145,25 +145,28 @@ def main():
     import torchvision.transforms as transforms
     from PIL import Image
     image = Image.open('map.png').convert('RGB')
-
+    
     transform = transforms.Compose(
         [transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
     t_image = transform(image).unsqueeze(0)
+    print(t_image)
 
     # TODO: Use RL to generate from image and start and end path weight map
     from RL_model import Model
     model = Model()
     weight_mu_std, value = model(t_image)
+    
     weight_mu = weight_mu_std[:,0]
     weight_std = weight_mu_std[:,1]**2
-    
+    print(min(weight_mu), max(weight_mu))
     
     # w_img = weight_distribution.detach()[0,0]
-    plt.imshow(weight_mu.detach()[0]);plt.colorbar();plt.show()
-    plt.imshow(weight_std.detach()[0]);plt.colorbar();plt.show()
-    plt.imshow(image);plt.imshow(weight_mu.detach()[0],alpha=0.5);plt.colorbar();plt.show()
+    plt.imshow(weight_mu.detach()[0]);plt.colorbar();plt.title("weight_mu");plt.show()
+    plt.imshow(weight_std.detach()[0]);plt.colorbar();plt.title("weight_std");plt.show()
+    plt.imshow(image);plt.imshow(weight_mu.detach()[0],alpha=0.5);plt.colorbar();plt.title("image and weight_mu");plt.show()
+    plt.imshow(image);plt.imshow(weight_std.detach()[0],alpha=0.5);plt.colorbar();plt.title("image and weight_std");plt.show()
 
     # print(weight_distribution, value)
 
@@ -174,7 +177,7 @@ def main():
     # weight = torch.distributions.Normal(w_img, std)
 
     weight = distribution.sample()
-    plt.imshow(weight.detach());plt.colorbar();plt.show()
+    plt.imshow(weight.detach());plt.colorbar();plt.title("weight");plt.show()
 
     log_prob = distribution.log_prob(weight).mean()
     entropy  = distribution.entropy().mean()

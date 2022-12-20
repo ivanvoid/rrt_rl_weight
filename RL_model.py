@@ -83,7 +83,11 @@ class Model(nn.Module):
         super().__init__()
 
         # ACTOR
-        self.actor = UNet()
+        from unet import UnetModel
+        # self.actor = UNet()
+        in_chans=3; out_chans=2; chans=128;
+        num_pool_layers=4; drop_prob=0.0
+        self.actor = UnetModel(in_chans, out_chans, chans, num_pool_layers, drop_prob)
 
         # CRITIC
         # feature extractor for critic and it's head.
