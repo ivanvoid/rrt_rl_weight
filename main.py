@@ -105,7 +105,7 @@ def plot(env, start, goal, render_me):
         plt.show()
     
 
-def gen_data(start, goal, seed=None, render_me=True):
+def gen_data(start, goal, seed=None, render_me=False):
     # get random seed
     if seed is None:
         _seed = np.random.randint(0,1000)
@@ -151,7 +151,7 @@ def main():
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
     t_image = transform(image).unsqueeze(0)
-    print(t_image)
+    # print(t_image)
 
     # TODO: Use RL to generate from image and start and end path weight map
     from RL_model import Model
@@ -160,13 +160,13 @@ def main():
     
     weight_mu = weight_mu_std[:,0]
     weight_std = weight_mu_std[:,1]**2
-    print(min(weight_mu), max(weight_mu))
+    # print(min(weight_mu), max(weight_mu))
     
     # w_img = weight_distribution.detach()[0,0]
-    plt.imshow(weight_mu.detach()[0]);plt.colorbar();plt.title("weight_mu");plt.show()
+    plt.figure();plt.imshow(weight_mu.detach()[0]);plt.colorbar();plt.title("weight_mu");plt.show()
     plt.imshow(weight_std.detach()[0]);plt.colorbar();plt.title("weight_std");plt.show()
-    plt.imshow(image);plt.imshow(weight_mu.detach()[0],alpha=0.5);plt.colorbar();plt.title("image and weight_mu");plt.show()
-    plt.imshow(image);plt.imshow(weight_std.detach()[0],alpha=0.5);plt.colorbar();plt.title("image and weight_std");plt.show()
+    # plt.imshow(image);plt.imshow(weight_mu.detach()[0],alpha=0.5);plt.colorbar();plt.title("image and weight_mu");plt.show()
+    # plt.imshow(image);plt.imshow(weight_std.detach()[0],alpha=0.5);plt.colorbar();plt.title("image and weight_std");plt.show()
 
     # print(weight_distribution, value)
 
@@ -177,12 +177,32 @@ def main():
     # weight = torch.distributions.Normal(w_img, std)
 
     weight = distribution.sample()
-    plt.imshow(weight.detach());plt.colorbar();plt.title("weight");plt.show()
+    weight = torch.sigmoid(weight)
+    plt.figure();plt.imshow(weight.detach());plt.colorbar();plt.title("weight");plt.show()
 
     log_prob = distribution.log_prob(weight).mean()
     entropy  = distribution.entropy().mean()
 
+
     # TODO: RRT-weighted evaluation here as reward function
+
+    # Compute weight map
+    cond = np.all(np.array(image) == np.array([0,0,0]), 2)
+    masked_weight = weight
+    masked_weight[cond] = torch.tensor([0.]).repeat(masked_weight[cond].size()[0])
+    masked_weight[:108] = 0
+    masked_weight[375:] = 0
+    masked_weight[:,:108] = 0
+    masked_weight[:,553:] = 0
+    plt.imshow(masked_weight)
+    
+
+    # put all values into small bakets 
+    p_weights = (masked_weight*100).round()
+    plt.imshow(p_weights, 'bwr')
+    # torch.unique((masked_weight*100).round())
+    # masked_weight
+    
     # reward = RRT_weighted(image, weight)
     # returns = reward # many iterations of rewards
     
