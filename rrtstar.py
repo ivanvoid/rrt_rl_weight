@@ -68,6 +68,16 @@ class RRTStar:
         self.prob_map = None  # call set_probability_map() method
         self.cumulative_prob_x = None # call set_probability_map() method
 
+    def set_probability_map_from_dict(self, prob_dct):
+        s = int(self.space_size)
+        prob_map = np.zeros((s, s))
+        for key, val in prob_dct.items():
+            for tup in val:
+                prob_map[tup] = key
+        prob_map /= prob_map.sum()
+
+        self.set_probability_map(prob_map)
+
     def set_probability_map(self, prob_map):
         self.prob_map = prob_map
         marginal_prob_x = np.sum(prob_map, axis=0)
@@ -283,10 +293,20 @@ def main():
     prob_map1 = np.full((512, 512), 1 / (512 ** 2))
     prob_map2 = np.random.default_rng().random(size=(512, 512))
     prob_map2 /= np.sum(prob_map2)
+    prob_dct = {
+        23 : [(1, 1), (2, 1)],
+        99 : [(0, 2), (3, 1)]
+    }
 
     rrt = RRTStar()
     rrt.run_time_seconds = 0.2  # configure the time for each run
     rrt.load_environment(1)  # load environment by index
+
+    # Run with probability dictionary
+    rrt.set_probability_map_from_dict(prob_dct)
+    solution_cost, first_solution_at_iteration = rrt.run()  # run and get reward
+    print(f"Solution Cost: {solution_cost}")
+    print(f"First Solution: {first_solution_at_iteration}")
 
     # Run with probability map
     print("\nProbability Map 1")
