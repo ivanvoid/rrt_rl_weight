@@ -130,7 +130,7 @@ def gen_data(start, goal, seed=None, render_me=False):
 def parse_me():
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('--arg')
+    parser.add_argument('--train_epochs', default=10)
 
     args = parser.parse_args()
     
@@ -145,112 +145,110 @@ def main():
     # generate(0, 3, n_seeds)
 
     # Learning
-    # read map.py
-    
-    image = Image.open('data/img/p00000.png').convert('RGB')
-    image = np.array(image)
-    
-    transform = transforms.Compose(
-        [transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-
-    t_image = transform(image).unsqueeze(0)
-    # print(t_image)
-
-    # TODO: Use RL to generate from image and start and end path weight map
-    
     model = Model()
-    weight_mu_std, value = model(t_image)
-    
-    weight_mu = weight_mu_std[:,0]
-    weight_std = weight_mu_std[:,1]**2
-    # print(min(weight_mu), max(weight_mu))
-    
-    # w_img = weight_distribution.detach()[0,0]
-    # plt.figure();plt.imshow(weight_mu.detach()[0]);plt.colorbar();plt.title("weight_mu");plt.show()
-    # plt.imshow(weight_std.detach()[0]);plt.colorbar();plt.title("weight_std");plt.show()
-    # plt.imshow(image);plt.imshow(weight_mu.detach()[0],alpha=0.5);plt.colorbar();plt.title("image and weight_mu");plt.show()
-    # plt.imshow(image);plt.imshow(weight_std.detach()[0],alpha=0.5);plt.colorbar();plt.title("image and weight_std");plt.show()
+    opt = torch.optim.Adam(model.parameters(), 1e-4)
 
-    # print(weight_distribution, value)
+    # Train loop
+    for epoch in range(args.train_epochs):
+        # read map.py
+        image = Image.open('data/img/p00000.png').convert('RGB')
+        image = np.array(image)
+        
+        transform = transforms.Compose(
+            [transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-    # ASSUME THAT WEIGHT IMAGE IS CORRECT
-    # log_std = torch.nn.Parameter(torch.ones_like(w_img))
-    # std   = log_std.exp().expand_as(w_img)
-    distribution = torch.distributions.Normal(weight_mu[0], weight_std[0])
-    # weight = torch.distributions.Normal(w_img, std)
+        t_image = transform(image).unsqueeze(0)
+        # print(t_image)
 
-    weight = distribution.sample()
-    weight = torch.sigmoid(weight)
-    plt.figure();plt.imshow(weight.detach());plt.colorbar();plt.title("weight");plt.show()
+        # TODO: Use RL to generate from image and start and end path weight map
+        
+        weight_mu_std, value = model(t_image)
+        
+        weight_mu = weight_mu_std[:,0]
+        weight_std = weight_mu_std[:,1]**2
+        # print(min(weight_mu), max(weight_mu))
+        
+        # w_img = weight_distribution.detach()[0,0]
+        # plt.figure();plt.imshow(weight_mu.detach()[0]);plt.colorbar();plt.title("weight_mu");plt.show()
+        # plt.imshow(weight_std.detach()[0]);plt.colorbar();plt.title("weight_std");plt.show()
+        # plt.imshow(image);plt.imshow(weight_mu.detach()[0],alpha=0.5);plt.colorbar();plt.title("image and weight_mu");plt.show()
+        # plt.imshow(image);plt.imshow(weight_std.detach()[0],alpha=0.5);plt.colorbar();plt.title("image and weight_std");plt.show()
 
-    log_prob = distribution.log_prob(weight).mean()
-    entropy  = distribution.entropy().mean()
+        # print(weight_distribution, value)
 
+        # ASSUME THAT WEIGHT IMAGE IS CORRECT
+        # log_std = torch.nn.Parameter(torch.ones_like(w_img))
+        # std   = log_std.exp().expand_as(w_img)
+        distribution = torch.distributions.Normal(weight_mu[0], weight_std[0])
+        # weight = torch.distributions.Normal(w_img, std)
 
-    # TODO: RRT-weighted evaluation here as reward function
+        weight = distribution.sample()
+        weight = torch.sigmoid(weight)
+        # plt.figure();plt.imshow(weight.detach());plt.colorbar();plt.title("weight");plt.show()
 
-    # Compute weight map
-    cond = np.all(np.array(image) == np.array([0,0,0]), 2)
-    masked_weight = weight
-    masked_weight[cond] = torch.tensor([0.]).repeat(masked_weight[cond].size()[0])
-    # masked_weight[:108] = 0
-    # masked_weight[375:] = 0
-    # masked_weight[:,:108] = 0
-    # masked_weight[:,553:] = 0
-    plt.imshow(masked_weight)
-    
-
-    # put all values into small bakets 
-    p_weights = (masked_weight*100).round()
-    plt.imshow(p_weights, 'bwr');plt.show()
-    
-    # bin all probabilities
-    unique_bins = torch.unique(p_weights)
-    probs_coords = {}
-    for ub in unique_bins:
-        if ub != 0: # if probability not 0
-            coords = np.where(p_weights == ub)
-            probs_coords[ub.item()] = [[tuple(c) for c in coords]] 
-    
-    all_rewards = []
-    for i in range(10):
-        curr_reward = 0
-        rrt = RRTStar()
-        rrt.run_time_seconds = 0.2  # configure the time for each run
-        rrt.load_environment(0)
-        # Run with probability dictionary
-        rrt.set_probability_map_from_dict(probs_coords)
-        solution_cost, first_solution_at_iteration = rrt.run()  # run and get reward
-        print(f"Solution Cost: {solution_cost}")
-        print(f"First Solution: {first_solution_at_iteration}")
-        if first_solution_at_iteration != -1:
-            curr_reward = solution_cost
-        all_rewards += [curr_reward]
-    mean_reward = np.mean(all_rewards)
-    print('Mean Reward at this iteration: ', mean_reward)
-
-    # print(probs_coords)
-
-    # Then use this new sampler to select points at random with predetermin 
-    # probability. And select coordinates at uniform from them.
-
-    # I don't actually know where new start and goal is... I will hardcode it
-    # for now
+        log_prob = distribution.log_prob(weight).mean()
+        entropy  = distribution.entropy().mean()
 
 
+        # TODO: RRT-weighted evaluation here as reward function
+
+        # Compute weight map
+        cond = np.all(np.array(image) == np.array([0,0,0]), 2)
+        masked_weight = weight
+        masked_weight[cond] = torch.tensor([0.]).repeat(masked_weight[cond].size()[0])
+        
+        # plt.imshow(masked_weight);plt.show()
+        
+        # put all values into small bakets 
+        p_weights = (masked_weight*100).round()
 
 
+        plt.imshow(p_weights, 'bwr')
+        plt.savefig(f'data/results/p00000_weight_epoch{epoch}.png')
+        
+        # bin all probabilities
+        unique_bins = torch.unique(p_weights)
+        probs_coords = {}
+        for ub in unique_bins:
+            if ub != 0: # if probability not 0
+                coords = np.where(p_weights == ub)
+                probs_coords[ub.item()] = [[tuple(c) for c in coords]] 
+        
+        all_rewards = []
+        for i in range(10):
+            rrt = RRTStar()
+            rrt.run_time_seconds = 0.2  # configure the time for each run
+            rrt.load_environment(0)
+            # Run with probability dictionary
+            rrt.set_probability_map_from_dict(probs_coords)
+            solution_cost, first_solution_at_iteration = rrt.run()  # run and get reward
+            # print(f"Solution Cost: {solution_cost}")
+            # print(f"First Solution: {first_solution_at_iteration}")
+            if first_solution_at_iteration != -1:
+                all_rewards += [solution_cost + first_solution_at_iteration]
+        mean_reward = np.mean(all_rewards)
+        print('Mean Reward at this iteration: ', mean_reward)
 
-    
-    # reward = RRT_weighted(image, weight)
-    # returns = reward # many iterations of rewards
+        # print(probs_coords)
 
-    # TODO: UPDATE
-    # advantage = returns - values
-    # actor_loss = -(log_prob * advantage.detach()).mean()
-    # critic_loss = advantage.pow(2).mean()
-    # loss = actor_loss + 0.5 * critic_loss - 0.001 * entropy
+        # Then use this new sampler to select points at random with predetermin 
+        # probability. And select coordinates at uniform from them.
+
+        returns = mean_reward # many iterations of rewards
+
+        # TODO: UPDATE
+        advantage = returns - value
+        actor_loss = -(log_prob * advantage.detach()).mean()
+        critic_loss = advantage.pow(2).mean()
+        loss = actor_loss + 0.5 * critic_loss - 0.001 * entropy
+
+        print('ACTER LOSS: {:.4f}, CRITIC LOSS: {:.4f}, RL LOSS: {:4f}'.format(
+            actor_loss, critic_loss, loss
+        ))
+
+        loss.backward()
+        opt.step()
 
     # Evaluation
 

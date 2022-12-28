@@ -93,19 +93,25 @@ class Model(nn.Module):
 
         # CRITIC
         # feature extractor for critic and it's head.
-        # self.feature_extractor = models.efficientnet_b0(pretrained=False)
-        # non-linear
-        # self.critic = nn.Sequential(
-        #     nn.Linear(num_inputs, hidden_size),
-        #     nn.ReLU(),
-        #     nn.Linear(hidden_size, 1)
-        # )
+        feature_extractor = models.efficientnet_b0(pretrained=False)
+        self.feature_extractor = nn.Sequential(*list((feature_extractor.children()))[:-1])
+        # non-linear critic head
+        self.critic_head = nn.Sequential(
+            nn.Linear(1280, 128),
+            nn.ReLU(),
+            nn.Linear(128, 1),
+            nn.Tanh()
+        )
 
     def forward(self, x):
         # x = self.feature_extractor(x)
         # value = self.critic(x)
-        value = -1
+        # value = -1
 
         probs = self.actor(x)
+
+        c_out = self.feature_extractor(x)
+        c_out = c_out.squeeze()
+        value = self.critic_head(c_out)
 
         return probs, value 
