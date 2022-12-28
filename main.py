@@ -6,6 +6,7 @@ import matplotlib.patches as patches
 '''
 parts of the code are taken and modified from
 https://github.com/zhm-real/PathPlanning
+nvidia_srl
 '''
 
 class Env:
@@ -133,18 +134,17 @@ def parse_me():
 def main():
     args = parse_me()
 
-    # Set start and end position
-    start = (3, 3)  # Starting node
-    goal = (49, 27)  # Goal node
-
     # Generate data
-    env = gen_data(start, goal, 420, False)
+    # from generate import generate
+    # n_seeds = np.arange(3) + 420
+    # generate(0, 3, n_seeds)
 
     # Learning
     # read map.py
     import torchvision.transforms as transforms
     from PIL import Image
-    image = Image.open('map.png').convert('RGB')
+    image = Image.open('data/img/p00000.png').convert('RGB')
+    image = np.array(image)
     
     transform = transforms.Compose(
         [transforms.ToTensor(),
@@ -163,8 +163,8 @@ def main():
     # print(min(weight_mu), max(weight_mu))
     
     # w_img = weight_distribution.detach()[0,0]
-    plt.figure();plt.imshow(weight_mu.detach()[0]);plt.colorbar();plt.title("weight_mu");plt.show()
-    plt.imshow(weight_std.detach()[0]);plt.colorbar();plt.title("weight_std");plt.show()
+    # plt.figure();plt.imshow(weight_mu.detach()[0]);plt.colorbar();plt.title("weight_mu");plt.show()
+    # plt.imshow(weight_std.detach()[0]);plt.colorbar();plt.title("weight_std");plt.show()
     # plt.imshow(image);plt.imshow(weight_mu.detach()[0],alpha=0.5);plt.colorbar();plt.title("image and weight_mu");plt.show()
     # plt.imshow(image);plt.imshow(weight_std.detach()[0],alpha=0.5);plt.colorbar();plt.title("image and weight_std");plt.show()
 
@@ -190,23 +190,58 @@ def main():
     cond = np.all(np.array(image) == np.array([0,0,0]), 2)
     masked_weight = weight
     masked_weight[cond] = torch.tensor([0.]).repeat(masked_weight[cond].size()[0])
-    masked_weight[:108] = 0
-    masked_weight[375:] = 0
-    masked_weight[:,:108] = 0
-    masked_weight[:,553:] = 0
+    # masked_weight[:108] = 0
+    # masked_weight[375:] = 0
+    # masked_weight[:,:108] = 0
+    # masked_weight[:,553:] = 0
     plt.imshow(masked_weight)
     
 
     # put all values into small bakets 
     p_weights = (masked_weight*100).round()
     plt.imshow(p_weights, 'bwr')
-    # torch.unique((masked_weight*100).round())
-    # masked_weight
+    
+    # bin all probabilities
+    unique_bins = torch.unique(p_weights)
+    probs_coords = {}
+    for ub in unique_bins:
+        if ub != 0: # if probability not 0
+            coords = np.where(p_weights == ub)
+            probs_coords[ub.item()] = [[tuple(c) for c in coords]] 
+
+
+    from rrtstar import RRTStar
+    rrt = RRTStar()
+    rrt.run_time_seconds = 0.2  # configure the time for each run
+    rrt.load_environment(1)
+
+    # Run with probability dictionary
+    rrt.set_probability_map_from_dict(probs_coords)
+    solution_cost, first_solution_at_iteration = rrt.run()  # run and get reward
+    print(f"Solution Cost: {solution_cost}")
+    print(f"First Solution: {first_solution_at_iteration}")
+
+
+    # print(probs_coords)
+
+    # Then use this new sampler to select points at random with predetermin 
+    # probability. And select coordinates at uniform from them.
+
+    # I don't actually know where new start and goal is... I will hardcode it
+    # for now
+    start = np.array([131, 355])
+    goal = np.array([140, 536])
+
+    from RRT import RRT
+    
+    state_space = np.array([[0,480], [0,640]])
+    goal_color = np.array([255,0,0])
+
+    rrt = RRT(state_space, goal_color, eps=0.03)
+    final_path, path = rrt.run(image, start, goal, None)
     
     # reward = RRT_weighted(image, weight)
     # returns = reward # many iterations of rewards
-    
-
 
     # TODO: UPDATE
     # advantage = returns - values

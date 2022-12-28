@@ -68,8 +68,8 @@ def has_collision(spheres, pos, radius):
     return False
 
 
-def generate_dataset(index):
-    rng = np.random.default_rng() if SEED is None else np.random.default_rng(seed=SEED)
+def generate_dataset(index, seed):
+    rng = np.random.default_rng() if seed is None else np.random.default_rng(seed=seed)
     spheres = []
     start = sample_with_x_bias(rng, spheres, AGENT_RADIUS, 0.0, START_X_MAX)
     #start = sample_collision_free(rng, spheres, AGENT_RADIUS, start_bias=START_BIAS)
@@ -94,11 +94,23 @@ def generate_dataset(index):
 def main():
     index = START_INDEX
     while index < START_INDEX + N_GENERATED_INSTANCES:
-        success, data = generate_dataset(index)
+        success, data = generate_dataset(index, SEED)
         if success:
             visualize(index, data, save_fig=True)
             index += 1
             print(f"{index - START_INDEX}: complete.")
+
+
+def generate(start_index, N, n_seeds):
+    index = start_index
+    n_generated = N
+    while index < start_index + n_generated:
+        seed = n_seeds[index]
+        success, data = generate_dataset(index, seed)
+        if success:
+            visualize(index, data, save_fig=True)
+            index += 1
+            print(f"{index - start_index}: complete.")
 
 
 if __name__ == '__main__':
