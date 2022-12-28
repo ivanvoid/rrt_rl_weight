@@ -3,11 +3,16 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import torchvision.transforms as transforms
+from PIL import Image
 '''
 parts of the code are taken and modified from
 https://github.com/zhm-real/PathPlanning
 nvidia_srl
 '''
+from rrtstar import RRTStar
+from RL_model import Model
+    
 
 class Env:
     def __init__(self, seed):
@@ -141,8 +146,7 @@ def main():
 
     # Learning
     # read map.py
-    import torchvision.transforms as transforms
-    from PIL import Image
+    
     image = Image.open('data/img/p00000.png').convert('RGB')
     image = np.array(image)
     
@@ -154,7 +158,7 @@ def main():
     # print(t_image)
 
     # TODO: Use RL to generate from image and start and end path weight map
-    from RL_model import Model
+    
     model = Model()
     weight_mu_std, value = model(t_image)
     
@@ -199,7 +203,7 @@ def main():
 
     # put all values into small bakets 
     p_weights = (masked_weight*100).round()
-    plt.imshow(p_weights, 'bwr')
+    plt.imshow(p_weights, 'bwr');plt.show()
     
     # bin all probabilities
     unique_bins = torch.unique(p_weights)
@@ -208,19 +212,23 @@ def main():
         if ub != 0: # if probability not 0
             coords = np.where(p_weights == ub)
             probs_coords[ub.item()] = [[tuple(c) for c in coords]] 
-
-
-    from rrtstar import RRTStar
-    rrt = RRTStar()
-    rrt.run_time_seconds = 0.2  # configure the time for each run
-    rrt.load_environment(1)
-
-    # Run with probability dictionary
-    rrt.set_probability_map_from_dict(probs_coords)
-    solution_cost, first_solution_at_iteration = rrt.run()  # run and get reward
-    print(f"Solution Cost: {solution_cost}")
-    print(f"First Solution: {first_solution_at_iteration}")
-
+    
+    all_rewards = []
+    for i in range(10):
+        curr_reward = 0
+        rrt = RRTStar()
+        rrt.run_time_seconds = 0.2  # configure the time for each run
+        rrt.load_environment(0)
+        # Run with probability dictionary
+        rrt.set_probability_map_from_dict(probs_coords)
+        solution_cost, first_solution_at_iteration = rrt.run()  # run and get reward
+        print(f"Solution Cost: {solution_cost}")
+        print(f"First Solution: {first_solution_at_iteration}")
+        if first_solution_at_iteration != -1:
+            curr_reward = solution_cost
+        all_rewards += [curr_reward]
+    mean_reward = np.mean(all_rewards)
+    print('Mean Reward at this iteration: ', mean_reward)
 
     # print(probs_coords)
 
@@ -229,16 +237,11 @@ def main():
 
     # I don't actually know where new start and goal is... I will hardcode it
     # for now
-    start = np.array([131, 355])
-    goal = np.array([140, 536])
 
-    from RRT import RRT
-    
-    state_space = np.array([[0,480], [0,640]])
-    goal_color = np.array([255,0,0])
 
-    rrt = RRT(state_space, goal_color, eps=0.03)
-    final_path, path = rrt.run(image, start, goal, None)
+
+
+
     
     # reward = RRT_weighted(image, weight)
     # returns = reward # many iterations of rewards
