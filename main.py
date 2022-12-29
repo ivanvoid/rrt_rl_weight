@@ -150,7 +150,7 @@ def main():
 
     # Learning
     model = Model()
-    opt = torch.optim.Adam(model.parameters(), 1e-4)
+    opt = torch.optim.Adam(model.parameters(), 1e-3)
     # opt = torch.optim.SGD(model.parameters(), 1e-5)
 
     def get_image(image_id):
@@ -185,7 +185,7 @@ def main():
             weight_mu_std, value = model(t_image)
             
             weight_mu = weight_mu_std[:,0]
-            weight_std = abs(weight_mu_std[:,1])
+            weight_std = weight_mu_std[:,1]**2
             # print(min(weight_mu), max(weight_mu))
             
             # w_img = weight_distribution.detach()[0,0]
@@ -203,9 +203,9 @@ def main():
             # weight = torch.distributions.Normal(w_img, std)
 
             weight = distribution.sample()
-            for j in range(19):
-                weight += distribution.sample()
-            weight /= 20    
+            # for j in range(99):
+            #     weight += distribution.sample()
+            # weight /= 100    
             weight = torch.sigmoid(weight)
             # plt.figure();plt.imshow(weight.detach());plt.colorbar();plt.title("weight");plt.show()
 
@@ -217,15 +217,15 @@ def main():
             # TODO: RRT-weighted evaluation here as reward function
 
             # Compute weight map
-            # cond = np.all(np.array(image) == np.array([0,0,0]), 2)
-            # masked_weight = weight
-            # masked_weight[cond] = torch.tensor([0.]).repeat(masked_weight[cond].size()[0])
+            cond = np.all(np.array(image) == np.array([0,0,0]), 2)
+            masked_weight = weight
+            masked_weight[cond] = torch.tensor([0.]).repeat(masked_weight[cond].size()[0])
             
             # plt.imshow(masked_weight);plt.show()
             
             # put all values into small bakets 
-            # p_weights = (masked_weight*100).round()
-            p_weights = (weight*100).round()
+            p_weights = (masked_weight*100).round()
+            # p_weights = (weight*100).round()
 
 
             plt.figure();plt.imshow(p_weights, 'bwr',vmin=0, vmax=100);plt.colorbar()
@@ -240,9 +240,9 @@ def main():
                     probs_coords[ub.item()] = [[tuple(c) for c in coords]] 
             
             all_rewards = []
-            for i in range(10):
+            for i in range(50):
                 rrt = RRTStar()
-                rrt.run_time_seconds = 0.1  # configure the time for each run
+                rrt.run_time_seconds = 0.075  # configure the time for each run
                 rrt.load_environment(0)
                 # Run with probability dictionary
                 rrt.set_probability_map_from_dict(probs_coords)
@@ -250,9 +250,10 @@ def main():
                 # print(f"Solution Cost: {solution_cost}")
                 # print(f"First Solution: {first_solution_at_iteration}")
                 if first_solution_at_iteration != -1:
-                    all_rewards += [solution_cost + first_solution_at_iteration]
+                    reward = 1000 - solution_cost
+                    all_rewards += [reward]
             if len(all_rewards) > 0:
-                mean_reward = len(all_rewards) * np.sum(all_rewards)
+                mean_reward = len(all_rewards) * np.mean(all_rewards) / 1000
                 print('[',len(all_rewards),'] Mean Reward at this iteration: ', mean_reward)
                 number_of_solutions += [len(all_rewards)]
             else:
@@ -274,7 +275,7 @@ def main():
             if loss < 0:
                 print('loss < 0')
 
-            print('LOSS | ACTER: {:}, CRITIC: {:}, RL: {:}'.format(
+            print('LOSS | ACTOR: {:.3f}, CRITIC: {:.3f}, RL: {:.3f}'.format(
                 actor_loss, critic_loss, loss
             ))
 
@@ -283,9 +284,9 @@ def main():
 
             losses += [loss.item()]
 
-        torch.save(model.state_dict(), 'models/model_epoch_{epoch}.pth')
+        torch.save(model.state_dict(), f'models/model_epoch_{epoch}.pth')
 
-        plt.figure();plt.plot(losses)
+        plt.figure();plt.plot(losses);plt.yscale('log')
         plt.savefig(f'data/results/plots/losses_{epoch}.png')
 
         plt.figure();plt.plot(number_of_solutions)
