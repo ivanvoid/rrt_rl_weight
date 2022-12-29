@@ -2,9 +2,12 @@ import argparse
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 import matplotlib.patches as patches
 import torchvision.transforms as transforms
 from PIL import Image
+matplotlib.use('Agg')
+
 '''
 parts of the code are taken and modified from
 https://github.com/zhm-real/PathPlanning
@@ -130,7 +133,7 @@ def gen_data(start, goal, seed=None, render_me=False):
 def parse_me():
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('--train_epochs', default=10)
+    parser.add_argument('--train_epochs', default=300)
 
     args = parser.parse_args()
     
@@ -140,14 +143,15 @@ def main():
     args = parse_me()
 
     # Generate data
-    N_IMAGES = 3
+    N_IMAGES = 100
     # from generate import generate
-    # n_seeds = np.arange(3) + 420
-    # generate(0, 3, n_seeds)
+    # n_seeds = np.arange(100) + 420
+    # generate(0, 100, n_seeds)
 
     # Learning
     model = Model()
     opt = torch.optim.Adam(model.parameters(), 1e-4)
+    # opt = torch.optim.SGD(model.parameters(), 1e-5)
 
     def get_image(image_id):
         # read map.py
@@ -171,6 +175,8 @@ def main():
         return image, t_image, name
 
     # Train loop
+    losses = []
+    number_of_solutions = []
     for epoch in range(args.train_epochs):
         for im_id in range(N_IMAGES):
             image, t_image, im_name = get_image(im_id)
@@ -179,7 +185,7 @@ def main():
             weight_mu_std, value = model(t_image)
             
             weight_mu = weight_mu_std[:,0]
-            weight_std = weight_mu_std[:,1]**2
+            weight_std = abs(weight_mu_std[:,1])
             # print(min(weight_mu), max(weight_mu))
             
             # w_img = weight_distribution.detach()[0,0]
@@ -197,6 +203,9 @@ def main():
             # weight = torch.distributions.Normal(w_img, std)
 
             weight = distribution.sample()
+            for j in range(19):
+                weight += distribution.sample()
+            weight /= 20    
             weight = torch.sigmoid(weight)
             # plt.figure();plt.imshow(weight.detach());plt.colorbar();plt.title("weight");plt.show()
 
@@ -208,17 +217,18 @@ def main():
             # TODO: RRT-weighted evaluation here as reward function
 
             # Compute weight map
-            cond = np.all(np.array(image) == np.array([0,0,0]), 2)
-            masked_weight = weight
-            masked_weight[cond] = torch.tensor([0.]).repeat(masked_weight[cond].size()[0])
+            # cond = np.all(np.array(image) == np.array([0,0,0]), 2)
+            # masked_weight = weight
+            # masked_weight[cond] = torch.tensor([0.]).repeat(masked_weight[cond].size()[0])
             
             # plt.imshow(masked_weight);plt.show()
             
             # put all values into small bakets 
-            p_weights = (masked_weight*100).round()
+            # p_weights = (masked_weight*100).round()
+            p_weights = (weight*100).round()
 
 
-            plt.figure();plt.imshow(p_weights, 'bwr');plt.colorbar()
+            plt.figure();plt.imshow(p_weights, 'bwr',vmin=0, vmax=100);plt.colorbar()
             plt.savefig(f'data/results/{im_name}_weight_epoch{epoch}.png')
             
             # bin all probabilities
@@ -230,7 +240,7 @@ def main():
                     probs_coords[ub.item()] = [[tuple(c) for c in coords]] 
             
             all_rewards = []
-            for i in range(100):
+            for i in range(10):
                 rrt = RRTStar()
                 rrt.run_time_seconds = 0.1  # configure the time for each run
                 rrt.load_environment(0)
@@ -242,11 +252,12 @@ def main():
                 if first_solution_at_iteration != -1:
                     all_rewards += [solution_cost + first_solution_at_iteration]
             if len(all_rewards) > 0:
-                mean_reward = np.sum(all_rewards)
+                mean_reward = len(all_rewards) * np.sum(all_rewards)
                 print('[',len(all_rewards),'] Mean Reward at this iteration: ', mean_reward)
+                number_of_solutions += [len(all_rewards)]
             else:
                 mean_reward = 0
-
+                number_of_solutions += [0]
             # print(probs_coords)
 
             # Then use this new sampler to select points at random with predetermin 
@@ -263,12 +274,22 @@ def main():
             if loss < 0:
                 print('loss < 0')
 
-            print('ACTER LOSS: {:.4f}, CRITIC LOSS: {:.4f}, RL LOSS: {:4f}'.format(
+            print('LOSS | ACTER: {:}, CRITIC: {:}, RL: {:}'.format(
                 actor_loss, critic_loss, loss
             ))
 
             loss.backward()
             opt.step()
+
+            losses += [loss.item()]
+
+        torch.save(model.state_dict(), 'models/model_epoch_{epoch}.pth')
+
+        plt.figure();plt.plot(losses)
+        plt.savefig(f'data/results/plots/losses_{epoch}.png')
+
+        plt.figure();plt.plot(number_of_solutions)
+        plt.savefig(f'data/results/plots/number_of_solutions_{epoch}.png')
 
     # Evaluation
 

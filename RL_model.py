@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 import torchvision.models as models
-torch.manual_seed(420)
+torch.manual_seed(0)
 # Actor-critic
 # inspired by
 # https://github.com/higgsfield/RL-Adventure-2
@@ -94,22 +94,22 @@ class Model(nn.Module):
 
         # CRITIC
         # feature extractor for critic and it's head.
-        # feature_extractor = models.efficientnet_b0(pretrained=False)
-        # self.feature_extractor = nn.Sequential(*list((feature_extractor.children()))[:-1])
+        feature_extractor = models.efficientnet_b0(pretrained=False)
+        self.feature_extractor = nn.Sequential(*list((feature_extractor.children()))[:-1])
         # self.feature_extractor = nn.Conv2d(1024, 3, 3)
         # non-linear critic head
-        # self.critic_head = nn.Sequential(
-        #     nn.Linear(1280, 64),
-        #     nn.ReLU(),
-        #     nn.Linear(64, 1),
-        #     nn.Tanh()
-        # )
-        self.flat_critic = nn.Sequential(
-            nn.Linear(786432, 64),
+        self.critic_head = nn.Sequential(
+            nn.Linear(1280, 64),
             nn.ReLU(),
             nn.Linear(64, 1),
-            nn.ReLU()
+            # nn.Tanh()
         )
+        # self.flat_critic = nn.Sequential(
+        #     nn.Linear(786432, 64),
+        #     nn.ReLU(),
+        #     nn.Linear(64, 1),
+        #     nn.ReLU()
+        # )
 
     def forward(self, x):
         # x = self.feature_extractor(x)
@@ -118,10 +118,10 @@ class Model(nn.Module):
 
         probs = self.actor(x)
 
-        value = self.flat_critic(x.flatten())
+        # value = self.flat_critic(x.flatten())
 
-        # c_out = self.feature_extractor(x)
-        # c_out = c_out.squeeze()
-        # value = self.critic_head(c_out)
+        c_out = self.feature_extractor(x)
+        c_out = c_out.squeeze()
+        value = self.critic_head(c_out)
 
         return probs, value 
