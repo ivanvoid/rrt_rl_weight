@@ -76,7 +76,7 @@ torch.manual_seed(0)
 #             out = F.interpolate(out, self.out_sz)
 #         return out
 
-from unet import UnetModel
+from unet import *
 
 class Model(nn.Module):
     
@@ -104,21 +104,11 @@ class Model(nn.Module):
             nn.Linear(64, 1),
             # nn.Tanh()
         )
-        # self.flat_critic = nn.Sequential(
-        #     nn.Linear(786432, 64),
-        #     nn.ReLU(),
-        #     nn.Linear(64, 1),
-        #     nn.ReLU()
-        # )
+
 
     def forward(self, x):
-        # x = self.feature_extractor(x)
-        # value = self.critic(x)
-        # value = -1
 
         probs = self.actor(x)
-
-        # value = self.flat_critic(x.flatten())
 
         c_out = self.feature_extractor(x)
         c_out = c_out.squeeze()
