@@ -161,7 +161,9 @@ def main():
         elif image_id < 100:
             name = f'p000{image_id}'
         
-        image = Image.open(f'train_data/img/{name}.png').convert('RGB')
+        image = Image.open(f'data/img/{name}.png').convert('RGB')
+        from PIL import ImageOps
+        image = ImageOps.flip(image)
         image = np.array(image)
         
         transform = transforms.Compose(
@@ -229,7 +231,7 @@ def main():
 
 
             plt.figure();plt.imshow(p_weights, 'bwr',vmin=0, vmax=100);plt.colorbar()
-            plt.savefig(f'train_data/results/{im_name}_weight_epoch{epoch}.png')
+            plt.savefig(f'data/results/{im_name}_weight_epoch{epoch}.png')
             
             # bin all probabilities
             unique_bins = torch.unique(p_weights)
@@ -287,10 +289,10 @@ def main():
         torch.save(model.state_dict(), f'models/model_epoch_{epoch}.pth')
 
         plt.figure();plt.plot(losses);plt.yscale('log')
-        plt.savefig(f'train_data/results/plots/losses_{epoch}.png')
+        plt.savefig(f'data/results/plots/losses_{epoch}.png')
 
         plt.figure();plt.plot(number_of_solutions)
-        plt.savefig(f'train_data/results/plots/number_of_solutions_{epoch}.png')
+        plt.savefig(f'data/results/plots/number_of_solutions_{epoch}.png')
 
     # Evaluation
 

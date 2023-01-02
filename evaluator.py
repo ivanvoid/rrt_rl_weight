@@ -5,6 +5,8 @@ from PIL import Image
 import torchvision.transforms as transforms
 import time
 from tqdm import tqdm 
+import matplotlib
+# matplotlib.use('Agg')
 
 from RL_model import Model
 from rrtstar import RRTStar
@@ -33,7 +35,10 @@ def get_image(image_id):
     elif image_id < 999:
         name = f'p00{image_id}'
     
-    image = Image.open(f'data/img/{name}.png').convert('RGB')
+    image = Image.open(f'data/img/{name}.png').convert('RGB') #.rotate(90)
+    from PIL import ImageOps
+    image = ImageOps.flip(image)
+
     image = np.array(image)
     
     transform = transforms.Compose(
@@ -67,7 +72,8 @@ for im_id in tqdm(range(N_IMAGES)):
     
     p_weights = (masked_weight*100).round()
 
-    # plt.figure();plt.imshow(p_weights, 'bwr',vmin=0, vmax=100);plt.colorbar()
+    plt.figure();plt.imshow(p_weights, 'bwr',vmin=0, vmax=100);plt.colorbar()
+    plt.savefig(f'data/eval_results/eval_{im_name}.png')
 
     # bin all probabilities
     unique_bins = torch.unique(p_weights)
@@ -86,9 +92,19 @@ for im_id in tqdm(range(N_IMAGES)):
         rrt.load_environment(im_id)
         # Run with probability dictionary
         rrt.set_probability_map_from_dict(probs_coords)
-        solution_cost, first_solution_at_iteration = rrt.run()
+        solution_cost, first_solution_at_iteration, path = rrt.run(True)
         if first_solution_at_iteration != -1:
+            print('')
             break
+
+
+    '''
+plt.imshow(image)
+for i in range(len(path) - 1):
+    xs = [path[i][0], path[i + 1][0]]
+    ys = [path[i][1], path[i + 1][1]]
+    plt.plot(xs, ys, color='r')
+    '''
 
     et = time.time()
     elapsed_time = et - st
