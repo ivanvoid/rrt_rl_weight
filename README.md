@@ -3,7 +3,7 @@ padm final project
 
 ![Probability Map Learning for RRT](https://github.com/ivanvoid/rrt_rl_weight/blob/main/figs/Probability%20Map%20Learning%20for%20RRT.png)
 
-[Slides](https://docs.google.com/presentation/d/12luKROnvGfac6HR1Ms3pbqxYjuCpR4I3uEzv3_fZVEc/edit?usp=sharing)
+[Slides](https://docs.google.com/presentation/d/1C-S6DbEJoRkHchx5VedGsQ736_kZjxWA/edit?usp=sharing&ouid=107258873336279381104&rtpof=true&sd=true)
 
 ## Data Generation
 In the generate.py program make configurations by changing the capitalized global variables.
